@@ -1,12 +1,12 @@
-class Config:
-    # Window settings
-    WINDOW_SIZE = (100, 100)
-    
-    # Asset paths
-    ASSETS_PATH = "resources/assets"
-    
-    # Timing settings
-    REMINDER_INTERVAL = 30 * 60  # 30 minutes in seconds
-    
-    # Animation settings
-    ANIMATION_SPEED = 100  # milliseconds between frames
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# AI Service Configuration
+AI_SERVICE_CONFIG = {
+    "type": os.getenv("AI_SERVICE_TYPE", "ollama"),  # "openai" or "ollama"
+    "openai_api_key": os.getenv("OPENAI_API_KEY"),
+    "ollama_url": os.getenv("OLLAMA_URL", "http://localhost:11434")
+}

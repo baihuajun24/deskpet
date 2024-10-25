@@ -1,12 +1,14 @@
 from PyQt6.QtWidgets import QMainWindow, QLabel, QWidget, QPushButton
-from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 import os, sys
+from ui.dialogs import ChatWindow
 
 class PetWindow(QMainWindow):
     def __init__(self):
         print("Initializing PetWindow...")
         super().__init__()
+        self.chat_window = None  # Add this to track chat window
         self.initUI()
         print("PetWindow initialization complete")
     
@@ -16,7 +18,28 @@ class PetWindow(QMainWindow):
         sys.exit()
     
     def mousePressEvent(self, event):
-        self.old_pos = event.globalPosition().toPoint()
+        if event.button() == Qt.MouseButton.LeftButton:
+            # Check if click is within the pet label bounds
+            if self.pet_label.geometry().contains(event.pos()):
+                self.open_chat_window()
+            self.old_pos = event.globalPosition().toPoint()
+    
+    def open_chat_window(self):
+        # Check if chat window already exists and is visible
+        if self.chat_window is not None and self.chat_window.isVisible():
+            # Optionally bring the existing window to front
+            self.chat_window.activateWindow()
+            return
+            
+        # Create new chat window if none exists
+        self.chat_window = ChatWindow(self)
+        # Position the chat window near the pet
+        pet_pos = self.pos()
+        self.chat_window.move(
+            pet_pos.x() + self.width(), 
+            pet_pos.y()
+        )
+        self.chat_window.show()
         
     def mouseMoveEvent(self, event):
         delta = event.globalPosition().toPoint() - self.old_pos

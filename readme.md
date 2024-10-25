@@ -1,5 +1,11 @@
 # 数字健康宠物伴侣
 
+## TODO
+1. default dialog for pet in xxx_config
+2. figure out how to use GLM APIs to support dialogs.py
+3. figure out how to use local ollama APIs to support dialogs.py
+
+
 ## 产品简介
 针对长时间坐姿办公人群的 AI 宠物互动式健康促进应用。
 
@@ -46,3 +52,30 @@
      
 9. 数据统计
    - 【可选】记录程序使用时长
+
+## Project Structure
+```
+DeskPet/
+├── src/
+│   ├── main.py           # Entry point
+│   ├── pet/
+│   │   ├── __init__.py
+│   │   ├── pet_window.py # Main pet window
+│   │   └── animations.py # Pet animations
+│   ├── monitors/
+│   │   ├── __init__.py
+│   │   ├── process_monitor.py
+│   │   └── posture_monitor.py
+│   ├── services/         # New directory
+│   │   ├── __init__.py
+│   │   └── ai_service.py # AI service implementations
+│   ├── ui/
+│   │   ├── __init__.py
+│   │   └── dialogs.py    # Interactive dialogs
+│   └── utils/
+│       ├── __init__.py
+│       └── config.py     # Settings
+├── resources/
+│   └── assets/          # Images and animations
+├── requirements.txt
+└── README.md
