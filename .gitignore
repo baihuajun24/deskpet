@@ -33,3 +33,7 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+
+# Add this to .gitignore
+config.json
+.env

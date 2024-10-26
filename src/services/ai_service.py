@@ -8,24 +8,28 @@ class AIService(ABC):
     async def get_response(self, message: str) -> str:
         pass
 
-class OpenAIService(AIService):
+from zhipuai import ZhipuAI
+
+class ZhipuAIService(AIService):
     def __init__(self, api_key: str):
-        self.client = openai.OpenAI(api_key=api_key)
+        self.client = ZhipuAI(api_key=api_key)
     
     async def get_response(self, message: str) -> str:
         try:
-            response = await self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+            # Remove await since ZhipuAI client is synchronous
+            response = self.client.chat.completions.create(
+                model="glm-4-plus",
                 messages=[
-                    {"role": "system", "content": "You are a helpful desktop pet. Keep responses concise and friendly."},
+                    {"role": "system", "content": "你是一个友好的桌面宠物。请保持回答简短友好，主要提醒用户多喝水、适当休息和运动。"},
                     {"role": "user", "content": message}
                 ],
-                max_tokens=100  # Keep responses short
+                max_tokens=30
             )
+            # Access the response content correctly
             return response.choices[0].message.content
         except Exception as e:
-            print(f"OpenAI API error: {e}")
-            return "Sorry, I'm having trouble connecting to my brain right now."
+            print(f"ZhipuAI API error: {e}")
+            return "抱歉，我现在连接不上我的大脑。"
 
 class OllamaService(AIService):
     def __init__(self, base_url: str = "http://localhost:11434"):

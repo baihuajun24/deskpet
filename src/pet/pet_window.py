@@ -5,10 +5,11 @@ import os, sys
 from ui.dialogs import ChatWindow
 
 class PetWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, api_key: str = None):
         print("Initializing PetWindow...")
         super().__init__()
         self.chat_window = None  # Add this to track chat window
+        self.api_key = api_key  # Store the API key
         self.initUI()
         print("PetWindow initialization complete")
     
@@ -27,12 +28,12 @@ class PetWindow(QMainWindow):
     def open_chat_window(self):
         # Check if chat window already exists and is visible
         if self.chat_window is not None and self.chat_window.isVisible():
-            # Optionally bring the existing window to front
             self.chat_window.activateWindow()
             return
             
-        # Create new chat window if none exists
-        self.chat_window = ChatWindow(self)
+        # Create new chat window if none exists, passing the API key
+        print(f"pet_window.py opening chat with API key: {self.api_key[:8]}..." if self.api_key else "No API key")
+        self.chat_window = ChatWindow(self, api_key=self.api_key)  # Pass API key here
         # Position the chat window above the pet
         pet_pos = self.pos()
         self.chat_window.move(
