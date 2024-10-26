@@ -33,11 +33,11 @@ class PetWindow(QMainWindow):
             
         # Create new chat window if none exists
         self.chat_window = ChatWindow(self)
-        # Position the chat window near the pet
+        # Position the chat window above the pet
         pet_pos = self.pos()
         self.chat_window.move(
-            pet_pos.x() + self.width(), 
-            pet_pos.y()
+            pet_pos.x() - (self.chat_window.width() - self.width()),  # Align right edges
+            pet_pos.y() - self.chat_window.height() - 10  # Above pet with 10px gap
         )
         self.chat_window.show()
         
@@ -57,7 +57,7 @@ class PetWindow(QMainWindow):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
         # Load the image
-        image_path = os.path.join("..", "resources", "assets", "pet_idle.png")
+        image_path = os.path.join("..", "resources", "assets", "1026.png")
         print(f"Attempting to load image from: {image_path}")
         pixmap = QPixmap(image_path)
         if pixmap.isNull():
@@ -110,7 +110,14 @@ class PetWindow(QMainWindow):
             self.pet_label.setGeometry(0, 20, 100, 100)
             self.setFixedSize(100, 120)  # 100x100 plus space for close button
         
-        # Set initial position
-        self.move(100, 100)
+        # Replace the current self.move(100, 100) with:
+        screen = self.screen()  # Get the screen where the window is
+        screen_geometry = screen.availableGeometry()  # This accounts for taskbar space
+        
+        # Calculate position (subtract window width and height from screen dimensions)
+        x = screen_geometry.width() - self.width() - 20  # 20px padding from right
+        y = screen_geometry.height() - self.height() - 20  # 20px padding from bottom
+        
+        self.move(x, y)
         self.old_pos = self.pos()
         print("UI setup complete")
