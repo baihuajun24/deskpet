@@ -150,8 +150,8 @@ class ChatWindow(QDialog):
         
         # Adjust window size and display message
         if len(message) > 20:
-            self.chat_display.setMaximumHeight(150)
-            self.setFixedSize(220, 120)
+            self.chat_display.setMaximumHeight(200)
+            self.setFixedSize(220, 150)
         else:
             self.chat_display.setMaximumHeight(50)
             self.setFixedSize(220, 120)
