@@ -43,10 +43,12 @@ def main():
     window = PetWindow(
         api_key=config.get('zhipu_api_key'),
         pet_config=config.get('pet'),
-        monitor_config=config.get('monitor')
+        monitor_config=config.get('monitor'),
+        chat_config=config.get('chat')
     )
     print(f"Pet config: {config.get('pet')}")
     print(f"Monitor config: {config.get('monitor')}")
+    print(f"Chat config: {config.get('chat')}")
     print("Created PetWindow")
     
     window.show()

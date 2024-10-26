@@ -4,42 +4,75 @@ from PyQt6.QtGui import QPixmap
 import os, sys
 from ui.dialogs import ChatWindow
 from monitors.process_monitor import ProcessMonitor
+from PyQt6.QtWidgets import QApplication
 
 class PetWindow(QMainWindow):
-    def __init__(self, api_key: str = None, pet_config: dict = None, monitor_config: dict = None):
-        print("Initializing PetWindow...")
+    def __init__(self, api_key: str = None, pet_config: dict = None, monitor_config: dict = None, chat_config: dict = None):
         super().__init__()
-        self.chat_window = None
         self.api_key = api_key
-        self.pet_config = pet_config or {"image": "1026.png", "assets_dir": "resources/assets"}
-        self.monitor_config = monitor_config or {"interval": 10, "enabled": True}
+        self.pet_config = pet_config or {}
+        self.monitor_config = monitor_config or {}
+        self.chat_config = chat_config or {}  # Store chat config
+        self.chat_window = None  # Initialize chat_window attribute
         
-        # Initialize process monitor with config
+        # Initialize process monitor
         if self.monitor_config.get("enabled", True):
             self.process_monitor = ProcessMonitor(
                 interval=self.monitor_config.get("interval", 10),
-                api_key=self.api_key
+                api_key=self.api_key,
+                demo_mode=self.monitor_config.get("demo_mode", False)  # Get demo mode from config
             )
-            # Connect monitor messages to handler
-            self.process_monitor.message_signal.connect(self.handle_monitor_message)
-            # Start monitoring
+            self.process_monitor.message_signal.connect(self.display_monitor_message)
             self.process_monitor.start_monitoring()
         
         self.initUI()
-        print("PetWindow initialization complete")
     
-    def handle_monitor_message(self, message):
-        # If chat window doesn't exist, create it
-        if not self.chat_window or not self.chat_window.isVisible():
-            self.open_chat_window()
-        # Display the message
-        self.chat_window.display_message(message)
+    def display_monitor_message(self, message):
+        """Display monitor message and handle chat window"""
+        print(f"Received monitor message: {message}")
+        
+        try:
+            # Create chat window if it doesn't exist
+            if not hasattr(self, 'chat_window') or self.chat_window is None:
+                print("Creating new chat window...")
+                self.chat_window = ChatWindow(
+                    self, 
+                    self.api_key,
+                    window_height=self.chat_config.get("window_height", 300)  # Pass height
+                )
+            
+            # Show message in chat window
+            if not self.chat_window.isVisible():
+                print("Showing chat window...")
+                self.chat_window.show()
+                self.position_chat_window()
+            
+            print("Displaying message in chat window...")
+            self.chat_window.display_message(message)
+            
+        except Exception as e:
+            print(f"Error in display_monitor_message: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def position_chat_window(self):
+        """Position chat window above the pet"""
+        if self.chat_window:
+            chat_pos = self.pos()
+            chat_pos.setY(chat_pos.y() - self.chat_window.height() - 10)
+            self.chat_window.move(chat_pos)
     
     def close_application(self):
         print("Closing application...")
+        # Save chat logs if chat window exists
+        if self.chat_window:
+            print("Saving chat logs before closing...")
+            self.chat_window.save_dialogue()
+        
         # Stop the monitor before closing
         if hasattr(self, 'process_monitor'):
             self.process_monitor.stop_monitoring()
+        
         self.close()
         sys.exit()
     
@@ -51,21 +84,15 @@ class PetWindow(QMainWindow):
             self.old_pos = event.globalPosition().toPoint()
     
     def open_chat_window(self):
-        # Check if chat window already exists and is visible
-        if self.chat_window is not None and self.chat_window.isVisible():
-            self.chat_window.activateWindow()
-            return
-            
-        # Create new chat window if none exists, passing the API key
-        print(f"pet_window.py opening chat with API key: {self.api_key[:8]}..." if self.api_key else "No API key")
-        self.chat_window = ChatWindow(self, api_key=self.api_key)  # Pass API key here
-        # Position the chat window above the pet
-        pet_pos = self.pos()
-        self.chat_window.move(
-            pet_pos.x() - (self.chat_window.width() - self.width()),  # Align right edges
-            pet_pos.y() - self.chat_window.height() - 10  # Above pet with 10px gap
-        )
+        """Open chat window manually"""
+        if not hasattr(self, 'chat_window') or self.chat_window is None:
+            self.chat_window = ChatWindow(
+                self, 
+                self.api_key,
+                window_height=self.chat_config.get("window_height", 300)  # Pass height
+            )
         self.chat_window.show()
+        self.position_chat_window()
         
     def mouseMoveEvent(self, event):
         delta = event.globalPosition().toPoint() - self.old_pos
@@ -104,8 +131,8 @@ class PetWindow(QMainWindow):
         
         # Add close button
         self.close_button = QPushButton("×", central_widget)
-        self.close_button.setGeometry(80, 0, 20, 20)  # Adjusted position for smaller window
-        self.close_button.clicked.connect(self.close_application)
+        self.close_button.setGeometry(80, 0, 20, 20)
+        self.close_button.clicked.connect(self.close_application)  # Make sure this is connected
         self.close_button.setStyleSheet("""
             QPushButton {
                 background-color: red;

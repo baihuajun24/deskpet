@@ -2,18 +2,26 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QLineEdit
 from PyQt6.QtCore import Qt
 import random
 import asyncio
+import os
 from services.ai_service import ZhipuAIService
 
 class ChatWindow(QDialog):
-    def __init__(self, parent=None, api_key=None):
+    def __init__(self, parent=None, api_key=None, window_height=300):
         super().__init__(parent)
         print(f"ChatWindow initialized with API key: {api_key[:8]}..." if api_key else "ChatWindow: No API key received")
         self.api_key = api_key
+        self.dialogue_history = []  # Add this line to store dialogue history
+        
         # Initialize AI service if API key is provided
         if self.api_key:
             print("Creating ZhipuAIService...")
             self.ai_service = ZhipuAIService(api_key=self.api_key)
             print("ZhipuAIService created")
+        
+        # Set window size
+        self.setFixedWidth(300)  # Fixed width
+        self.setFixedHeight(window_height)  # Configurable height
+        
         self.initUI()
         
     def initUI(self):
@@ -68,7 +76,7 @@ class ChatWindow(QDialog):
         )
         
         # Initial greeting
-        self.chat_display.setText("今天要记得多喝水哦！有什么需要我提醒的吗？")
+        self.chat_display.setText("嗷呜！今天又元气满满的一天呢！")
     
     async def get_ai_response(self, message: str) -> str:
         try:
@@ -97,70 +105,60 @@ class ChatWindow(QDialog):
     
     def send_message(self):
         message = self.input_field.text().strip()
-        print(f"User message received: {message}")
+        if not message:
+            return
+            
+        # Add user message to history
+        self.dialogue_history.append({
+            "role": "user",
+            "content": message
+        })
         
-        if message:
-            old_height = self.height()
-            self.chat_display.clear()
+        if self.api_key:
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
             
-            if self.api_key:
-                print(f"API key found: {self.api_key[:8]}...")
-                try:
-                    print("Attempting to get event loop...")
-                    loop = asyncio.get_event_loop()
-                    print("Existing event loop found")
-                except RuntimeError:
-                    print("No existing event loop, creating new one...")
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    print("New event loop created and set")
-                
-                print("Requesting AI response...")
-                response = loop.run_until_complete(self.get_ai_response(message))
-                print(f"AI response received: {response}")
-            else:
-                print("No API key found, using fallback response")
-                response = self.get_fallback_response()
-                print(f"Fallback response selected: {response}")
-            
-            # Adjust window size based on response length
-            if len(response) > 20:
-                self.chat_display.setMaximumHeight(150)  # Allow expansion
-                self.setFixedSize(220, 150)  # Attention: change this value to change the window size
-            else:
-                self.chat_display.setMaximumHeight(50)  # Keep small
-                self.setFixedSize(220, 120)  # Default small size
-            
-            self.chat_display.append(f"Pet: {response}")
-            self.input_field.clear()
-            
-            # Adjust window position
-            new_height = self.height()
-            if new_height != old_height:
-                pet_pos = self.parent().pos()
-                self.move(
-                    pet_pos.x() - (self.width() - self.parent().width()),
-                    pet_pos.y() - self.height() - 10
-                )
-            
-            print("Message displayed and input cleared")
+            # Get AI response with history
+            response = loop.run_until_complete(
+                self.get_ai_response(message, self.dialogue_history)
+            )
+        else:
+            response = self.get_fallback_response()
+        
+        # Add AI response to history
+        self.dialogue_history.append({
+            "role": "assistant",
+            "content": response
+        })
+        
+        # Update display
+        self.chat_display.setText(response)
+        self.input_field.clear()
 
     def display_message(self, message):
-        """Display a message in the chat window."""
+        """Display a message and add to history."""
         old_height = self.height()
         
-        # Adjust window size based on message length
+        # Add to dialogue history
+        self.dialogue_history.append({
+            "role": "assistant",
+            "content": message
+        })
+        
+        # Adjust window size and display message
         if len(message) > 20:
-            self.chat_display.setMaximumHeight(150)  # Allow expansion
-            self.setFixedSize(220, 200)  # Attention: change this value to change the window size
+            self.chat_display.setMaximumHeight(150)
+            self.setFixedSize(220, 120)
         else:
-            self.chat_display.setMaximumHeight(50)  # Keep small
-            self.setFixedSize(220, 120)  # Default small size
+            self.chat_display.setMaximumHeight(50)
+            self.setFixedSize(220, 120)
         
-        # Display the message
-        self.chat_display.append(f"Pet: {message}")
+        self.chat_display.setText(message)
         
-        # Adjust window position if height changed
+        # Adjust window position
         new_height = self.height()
         if new_height != old_height:
             pet_pos = self.parent().pos()
@@ -168,3 +166,42 @@ class ChatWindow(QDialog):
                 pet_pos.x() - (self.width() - self.parent().width()),
                 pet_pos.y() - self.height() - 10
             )
+
+    def save_dialogue(self):
+        """Save dialogue history to a log file."""
+        if not self.dialogue_history:  # If no dialogue, don't save
+            print("No dialogue to save")
+            return
+            
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Create absolute path for logs directory
+        log_dir = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),  # Go up to src directory
+            'logs'
+        )
+        print(f"Attempting to save logs to: {log_dir}")
+        
+        # Create directory if it doesn't exist
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+            print(f"Created logs directory at: {log_dir}")
+        
+        # Create absolute path for log file
+        filename = os.path.join(log_dir, f"chat_log_{timestamp}.txt")
+        
+        try:
+            # Save the dialogue
+            with open(filename, "w", encoding="utf-8") as f:
+                f.write(f"Chat log created at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                for entry in self.dialogue_history:
+                    f.write(f"{entry['role']}: {entry['content']}\n")
+            print(f"Successfully saved dialogue to: {filename}")
+        except Exception as e:
+            print(f"Error saving dialogue: {e}")
+
+    def close(self):
+        """Override close to save dialogue history."""
+        self.save_dialogue()
+        super().close()
