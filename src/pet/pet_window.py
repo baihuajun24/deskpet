@@ -3,18 +3,37 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 import os, sys
 from ui.dialogs import ChatWindow
+from monitors.process_monitor import ProcessMonitor
 
 class PetWindow(QMainWindow):
     def __init__(self, api_key: str = None):
         print("Initializing PetWindow...")
         super().__init__()
-        self.chat_window = None  # Add this to track chat window
-        self.api_key = api_key  # Store the API key
+        self.chat_window = None
+        self.api_key = api_key
+        
+        # Initialize process monitor
+        self.process_monitor = ProcessMonitor(interval=10, api_key=self.api_key)
+        # Connect monitor messages to handler
+        self.process_monitor.message_signal.connect(self.handle_monitor_message)
+        # Start monitoring
+        self.process_monitor.start_monitoring()
+        
         self.initUI()
         print("PetWindow initialization complete")
     
+    def handle_monitor_message(self, message):
+        # If chat window doesn't exist, create it
+        if not self.chat_window or not self.chat_window.isVisible():
+            self.open_chat_window()
+        # Display the message
+        self.chat_window.display_message(message)
+    
     def close_application(self):
         print("Closing application...")
+        # Stop the monitor before closing
+        if hasattr(self, 'process_monitor'):
+            self.process_monitor.stop_monitoring()
         self.close()
         sys.exit()
     

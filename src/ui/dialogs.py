@@ -144,3 +144,27 @@ class ChatWindow(QDialog):
                 )
             
             print("Message displayed and input cleared")
+
+    def display_message(self, message):
+        """Display a message in the chat window."""
+        old_height = self.height()
+        
+        # Adjust window size based on message length
+        if len(message) > 20:
+            self.chat_display.setMaximumHeight(150)  # Allow expansion
+            self.setFixedSize(220, 200)  # Attention: change this value to change the window size
+        else:
+            self.chat_display.setMaximumHeight(50)  # Keep small
+            self.setFixedSize(220, 120)  # Default small size
+        
+        # Display the message
+        self.chat_display.append(f"Pet: {message}")
+        
+        # Adjust window position if height changed
+        new_height = self.height()
+        if new_height != old_height:
+            pet_pos = self.parent().pos()
+            self.move(
+                pet_pos.x() - (self.width() - self.parent().width()),
+                pet_pos.y() - self.height() - 10
+            )
