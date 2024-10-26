@@ -1,39 +1,23 @@
-﻿# Python
+# Audio files
+resources/assets/*.mp3
+resources/assets/*.wav
+
+# Log files
+src/logs/
+src/logs/*
+
+# Python cache
 __pycache__/
-*.py[cod]
-*.class
-*.so
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
+*.pyc
+*.pyo
+*.pyd
 
-# Virtual Environment
-venv/
-ENV/
-
-# IDE
-.idea/
+# IDE files
 .vscode/
+.idea/
 *.swp
-*.swo
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Add this to .gitignore
-config.json
+# Environment
+venv/
+env/
 .env
