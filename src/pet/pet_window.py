@@ -6,18 +6,24 @@ from ui.dialogs import ChatWindow
 from monitors.process_monitor import ProcessMonitor
 
 class PetWindow(QMainWindow):
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: str = None, pet_config: dict = None, monitor_config: dict = None):
         print("Initializing PetWindow...")
         super().__init__()
         self.chat_window = None
         self.api_key = api_key
+        self.pet_config = pet_config or {"image": "1026.png", "assets_dir": "resources/assets"}
+        self.monitor_config = monitor_config or {"interval": 10, "enabled": True}
         
-        # Initialize process monitor
-        self.process_monitor = ProcessMonitor(interval=10, api_key=self.api_key)
-        # Connect monitor messages to handler
-        self.process_monitor.message_signal.connect(self.handle_monitor_message)
-        # Start monitoring
-        self.process_monitor.start_monitoring()
+        # Initialize process monitor with config
+        if self.monitor_config.get("enabled", True):
+            self.process_monitor = ProcessMonitor(
+                interval=self.monitor_config.get("interval", 10),
+                api_key=self.api_key
+            )
+            # Connect monitor messages to handler
+            self.process_monitor.message_signal.connect(self.handle_monitor_message)
+            # Start monitoring
+            self.process_monitor.start_monitoring()
         
         self.initUI()
         print("PetWindow initialization complete")
@@ -76,8 +82,14 @@ class PetWindow(QMainWindow):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
-        # Load the image
-        image_path = os.path.join("..", "resources", "assets", "1026.png")
+        # Load the image using config
+        image_path = os.path.join(
+            os.path.dirname(__file__), 
+            "..", 
+            "..",
+            self.pet_config["assets_dir"],
+            self.pet_config["image"]
+        )
         print(f"Attempting to load image from: {image_path}")
         pixmap = QPixmap(image_path)
         if pixmap.isNull():

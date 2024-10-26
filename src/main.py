@@ -22,8 +22,10 @@ def load_config():
     try:
         config_path = os.path.join(os.path.dirname(__file__), '..', 'config.json')
         with open(config_path, 'r') as f:
-            return json.load(f)
-        print("config.json loaded")
+            config = json.load(f)
+        print("config.json loaded")  # Move print before return
+        print(f"Loaded monitor interval: {config.get('monitor', {}).get('interval')} seconds")  # Add this line
+        return config
     except FileNotFoundError:
         print("Error: config.json not found. Please create one from config.template.json")
         sys.exit(1)
@@ -34,11 +36,17 @@ def load_config():
 def main():
     print("Starting application...")
     config = load_config()
+    print(f"Loaded config: {config}")
     app = QApplication(sys.argv)
     print("Created QApplication")
     
-    window = PetWindow(api_key=config.get('zhipu_api_key'))
-    print(f"1026 check API key: {config.get('zhipu_api_key')}")
+    window = PetWindow(
+        api_key=config.get('zhipu_api_key'),
+        pet_config=config.get('pet'),
+        monitor_config=config.get('monitor')
+    )
+    print(f"Pet config: {config.get('pet')}")
+    print(f"Monitor config: {config.get('monitor')}")
     print("Created PetWindow")
     
     window.show()

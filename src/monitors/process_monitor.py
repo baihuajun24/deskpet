@@ -10,36 +10,43 @@ class ProcessMonitor(QObject):
     
     def __init__(self, interval=10, api_key=None):
         super().__init__()
-        self.interval = interval
+        self.interval = interval  # Seconds between process checks
         self.running = False
         self.ai_service = ZhipuAIService(api_key=api_key) if api_key else None
-        print(f"ProcessMonitor initialized with interval: {interval}s")
+        print(f"ProcessMonitor initialized with interval: {self.interval} seconds")  # Updated message
         
     def get_top_process(self):
         try:
-            # Get all processes and their info
+            # Get all processes and their info with elevated privileges
             processes = []
-            for proc in psutil.process_iter(['pid', 'name', 'memory_percent']):
+            for proc in psutil.process_iter(['pid', 'name', 'memory_info', 'memory_percent']):
                 try:
-                    # Get process info
-                    info = proc.info
-                    # Get memory usage
-                    info['memory_percent'] = proc.memory_percent()
-                    if info['memory_percent'] > 0:  # Only add processes using memory
-                        processes.append(info)
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    # Get detailed memory info
+                    with proc.oneshot():  # Improve performance by getting all info at once
+                        info = {
+                            'pid': proc.pid,
+                            'name': proc.name(),
+                            'memory_percent': proc.memory_percent(),
+                            'memory_mb': proc.memory_info().rss / (1024 * 1024)  # Convert to MB
+                        }
+                        if info['memory_percent'] > 0:
+                            processes.append(info)
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                     continue
             
-            # Filter out None values and sort by memory usage
+            # Filter and sort by memory usage
             valid_processes = [p for p in processes if p['memory_percent'] is not None]
             if not valid_processes:
                 return None
                 
             # Sort by memory usage and get top process
-            valid_processes.sort(key=lambda x: x['memory_percent'], reverse=True)
+            valid_processes.sort(key=lambda x: x['memory_mb'], reverse=True)
             top_process = valid_processes[0]
             
-            print(f"Top process: {top_process['name']} (Memory: {top_process['memory_percent']:.1f}%)")
+            print(f"Top 3 processes by memory:")
+            for proc in valid_processes[:3]:
+                print(f"- {proc['name']}: {proc['memory_mb']:.1f}MB ({proc['memory_percent']:.1f}%)")
+            
             return top_process
             
         except Exception as e:
